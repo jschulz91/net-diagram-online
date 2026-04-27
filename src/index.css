@@ -1,0 +1,591 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Layout ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: #1e293b;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.app-logo { font-size: 20px; }
+.app-title { letter-spacing: 0.02em; }
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebars ────────────────────────────────────────── */
+.sidebar-left,
+.sidebar-right {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
+}
+
+.sidebar-left  { width: 180px; border-right: 1px solid #e2e8f0; }
+.sidebar-right { width: 240px; border-left:  1px solid #e2e8f0; border-right: none; }
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+}
+
+/* ── Toolbar ─────────────────────────────────────────── */
+.toolbar {
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolbar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  padding: 0 4px;
+}
+
+.toolbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.add-node-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  text-align: left;
+  color: #334155;
+}
+
+.add-node-btn:hover {
+  background: #f1f5f9;
+  transform: translateX(2px);
+}
+
+.btn-icon { font-size: 15px; }
+
+.toolbar-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 6px 0;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.export-btn { background: #dbeafe; color: #1d4ed8; }
+.export-btn:hover { background: #bfdbfe; }
+.import-btn { background: #dcfce7; color: #166534; }
+.import-btn:hover { background: #bbf7d0; }
+.pdf-btn { background: #fef3c7; color: #92400e; }
+.pdf-btn:hover { background: #fde68a; }
+
+.toolbar-hint {
+  font-size: 10px;
+  color: #94a3b8;
+  padding: 4px;
+  line-height: 1.6;
+}
+
+/* ── Network Nodes ───────────────────────────────────── */
+.network-node {
+  width: 100%;
+  min-width: 130px;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.network-node:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px 6px 0 0;
+  color: white;
+}
+
+.node-icon { font-size: 14px; flex-shrink: 0; }
+
+/* User name in header (prominent) */
+.node-label-header {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Type badge below header */
+.node-type-area {
+  padding: 2px 10px 3px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.node-type-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+/* Port rows — each row is the direct parent of its Handle */
+.port-list {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 6px;
+}
+
+.port-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.port-row:hover { background: #f8fafc; }
+
+/* Right-side (default): text left, handle on right */
+.port-row-right {
+  padding: 3px 22px 3px 10px;
+}
+.port-row-right .react-flow__handle {
+  position: absolute !important;
+  right: 4px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Left-side: text right-aligned, handle on left */
+.port-row-left {
+  flex-direction: row-reverse;
+  padding: 3px 10px 3px 22px;
+}
+.port-row-left .react-flow__handle {
+  position: absolute !important;
+  left: 4px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* port-name first (prominent), port-type as small badge after */
+.port-name {
+  color: #334155;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.port-type {
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+/* Color picker (Inspector) */
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-input {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  cursor: pointer;
+  background: none;
+}
+
+.color-value {
+  font-family: monospace;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Port side switcher (Inspector) */
+.port-side-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.side-btn {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.side-btn:hover {
+  background: #f1f5f9;
+}
+
+.side-btn-active {
+  background: #1e293b;
+  color: white;
+  border-color: #1e293b;
+}
+
+/* ── React Flow Handles (ports) ──────────────────────── */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  opacity: 0.5;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle {
+  opacity: 1;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.4);
+  opacity: 1 !important;
+  cursor: crosshair;
+}
+
+/* ── Node Inspector ──────────────────────────────────── */
+.inspector {
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.inspector-empty {
+  justify-content: center;
+  align-items: center;
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-left: 4px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.inspector-icon { font-size: 18px; }
+.inspector-type {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inspector-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field-input,
+.field-textarea {
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.field-input:focus,
+.field-textarea:focus {
+  border-color: #94a3b8;
+  background: white;
+}
+
+/* ── Port Editor ─────────────────────────────────────── */
+.port-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.port-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.empty-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.port-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.port-input {
+  padding: 4px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #f8fafc;
+  outline: none;
+  color: #1e293b;
+}
+
+.port-input:focus { border-color: #94a3b8; background: white; }
+.port-type { width: 56px; font-family: monospace; }
+.port-name { flex: 1; font-family: monospace; }
+
+.btn-small {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+}
+
+.btn-add { background: #dbeafe; color: #1d4ed8; }
+.btn-add:hover { background: #bfdbfe; }
+.btn-remove { background: #fee2e2; color: #b91c1c; }
+.btn-remove:hover { background: #fecaca; }
+
+/* ── Edge routing drag handle ────────────────────────── */
+.edge-routing-handle {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 2px solid #3b82f6;
+  border-radius: 3px;
+  cursor: ew-resize;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.edge-routing-handle:hover {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+}
+
+/* ── Node size switcher ──────────────────────────────── */
+.size-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Zone Node ───────────────────────────────────────── */
+.zone-node {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed #94a3b8;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.06);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.zone-node-selected {
+  border-color: #475569;
+  background: rgba(71, 85, 105, 0.08);
+}
+
+.zone-label {
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  background: #f1f5f9;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 20px;
+}
+
+/* ── Edge Inspector ──────────────────────────────────── */
+.edge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.edge-endpoint {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.edge-ep-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.edge-ep-value {
+  font-size: 12px;
+  color: #334155;
+  font-family: monospace;
+}
+
+/* ── Inspector Footer ────────────────────────────────── */
+.inspector-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-duplicate {
+  flex: 1;
+  padding: 7px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-duplicate:hover { background: #e2e8f0; }
+
+.btn-delete {
+  flex: 1;
+  padding: 7px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-delete:hover { background: #fecaca; }
+
+/* ── React Flow overrides ────────────────────────────── */
+.react-flow__node.selected > .network-node {
+  box-shadow: 0 0 0 2px #3b82f6, 0 4px 16px rgba(59,130,246,0.2);
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
