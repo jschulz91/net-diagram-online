@@ -3,6 +3,7 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  Panel,
   ConnectionMode,
   type Connection,
   type Edge,
@@ -22,6 +23,7 @@ import { PlcNode } from '../nodes/PlcNode'
 import { ZoneNode } from '../nodes/ZoneNode'
 import { CustomNode } from '../nodes/CustomNode'
 import AdjustableStepEdge from '../edges/AdjustableStepEdge'
+import { TitleBlock } from './TitleBlock'
 
 const nodeTypes = {
   server: ServerNode,
@@ -54,6 +56,7 @@ export function DiagramCanvas() {
   const addEdge = useDiagramStore((s) => s.addEdge)
   const setSelectedNode = useDiagramStore((s) => s.setSelectedNode)
   const setSelectedEdge = useDiagramStore((s) => s.setSelectedEdge)
+  const projectInfo = useDiagramStore((s) => s.projectInfo)
 
   const frozenNodeTypes = useMemo(() => nodeTypes, [])
   const frozenEdgeTypes = useMemo(() => edgeTypes, [])
@@ -114,17 +117,24 @@ export function DiagramCanvas() {
         deleteKeyCode="Delete"
       >
         <Background gap={16} />
-        <Controls />
-        <MiniMap nodeColor={(n) => {
-          const colors: Record<string, string> = {
-            server: '#3b82f6',
-            switch: '#10b981',
-            vpn_router: '#8b5cf6',
-            firewall: '#ef4444',
-            plc: '#f59e0b',
-          }
-          return colors[n.type ?? ''] ?? '#94a3b8'
-        }} />
+        <Controls className="no-print" />
+        <MiniMap
+          className="no-print"
+          position="top-right"
+          nodeColor={(n) => {
+            const colors: Record<string, string> = {
+              server: '#3b82f6',
+              switch: '#10b981',
+              vpn_router: '#8b5cf6',
+              firewall: '#ef4444',
+              plc: '#f59e0b',
+            }
+            return colors[n.type ?? ''] ?? '#94a3b8'
+          }}
+        />
+        <Panel position="bottom-right">
+          <TitleBlock info={projectInfo} />
+        </Panel>
       </ReactFlow>
     </div>
   )

@@ -6,7 +6,7 @@ import { toJSON, fromJSON } from '../../utils/serialization'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
-const NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc']
+const NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc', 'custom']
 const NODE_NAMES: Record<NodeType, string> = {
   server: 'Server',
   switch: 'Switch',
@@ -21,6 +21,7 @@ export function Toolbar() {
   const addNode = useDiagramStore((s) => s.addNode)
   const nodes = useDiagramStore((s) => s.nodes)
   const edges = useDiagramStore((s) => s.edges)
+  const projectInfo = useDiagramStore((s) => s.projectInfo)
   const loadDiagram = useDiagramStore((s) => s.loadDiagram)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -28,7 +29,11 @@ export function Toolbar() {
     const canvas = document.querySelector('.react-flow') as HTMLElement | null
     if (!canvas) return
     try {
-      const dataUrl = await toPng(canvas, { pixelRatio: 2, backgroundColor: '#f1f5f9' })
+      const dataUrl = await toPng(canvas, {
+        pixelRatio: 2,
+        backgroundColor: '#f1f5f9',
+        filter: (node) => !node.classList?.contains('no-print'),
+      })
       const img = new Image()
       img.src = dataUrl
       await new Promise((res) => { img.onload = res })
@@ -42,7 +47,7 @@ export function Toolbar() {
   }
 
   function handleExport() {
-    const diagram = toJSON(nodes, edges)
+    const diagram = toJSON(nodes, edges, projectInfo)
     const blob = new Blob([JSON.stringify(diagram, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -104,14 +109,6 @@ export function Toolbar() {
         >
           <span className="btn-icon">▭</span>
           <span>Zone</span>
-        </button>
-        <button
-          className="add-node-btn"
-          style={{ borderLeftColor: '#6366f1' }}
-          onClick={() => addNode('custom')}
-        >
-          <span className="btn-icon">◆</span>
-          <span>Benutzerdefiniert</span>
         </button>
       </div>
 

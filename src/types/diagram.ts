@@ -1,5 +1,13 @@
 import type { Node, Edge } from 'reactflow'
 
+export interface ProjectInfo {
+  name: string
+  creator: string
+  date: string
+  version: string
+  description: string
+}
+
 export type NodeType = 'server' | 'switch' | 'vpn_router' | 'firewall' | 'plc' | 'zone' | 'custom'
 
 export interface Port {
@@ -56,6 +64,7 @@ export interface SerializedEdge {
 export interface DiagramFile {
   version: '1.0'
   exportedAt: string
+  projectInfo?: ProjectInfo
   nodes: SerializedNode[]
   edges: SerializedEdge[]
 }

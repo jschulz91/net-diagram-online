@@ -4,14 +4,19 @@ import { immer } from 'zustand/middleware/immer'
 import { applyNodeChanges, applyEdgeChanges } from 'reactflow'
 import type { NodeChange, EdgeChange, Edge } from 'reactflow'
 import { v4 as uuid } from 'uuid'
-import type { NetworkNode, NetworkEdge, NetworkNodeData, Port, NodeType, ConnectionData } from '../types/diagram'
+import type { NetworkNode, NetworkEdge, NetworkNodeData, Port, NodeType, ConnectionData, ProjectInfo } from '../types/diagram'
 import { DEFAULT_PORTS, NODE_LABELS } from '../constants/nodeDefinitions'
+
+const DEFAULT_PROJECT_INFO: ProjectInfo = {
+  name: '', creator: '', date: '', version: '', description: '',
+}
 
 interface DiagramState {
   nodes: NetworkNode[]
   edges: NetworkEdge[]
   selectedNodeId: string | null
   selectedEdgeId: string | null
+  projectInfo: ProjectInfo
 
   onNodesChange: (changes: NodeChange[]) => void
   onEdgesChange: (changes: EdgeChange[]) => void
@@ -28,9 +33,10 @@ interface DiagramState {
   updateEdgeLabel: (id: string, label: string) => void
   updateEdgeData: (id: string, patch: Partial<ConnectionData>) => void
   updateNodeStyle: (id: string, style: React.CSSProperties) => void
+  updateProjectInfo: (patch: Partial<ProjectInfo>) => void
   setSelectedNode: (id: string | null) => void
   setSelectedEdge: (id: string | null) => void
-  loadDiagram: (diagram: { nodes: NetworkNode[]; edges: NetworkEdge[] }) => void
+  loadDiagram: (diagram: { nodes: NetworkNode[]; edges: NetworkEdge[]; projectInfo?: ProjectInfo }) => void
 }
 
 export const useDiagramStore = create<DiagramState>()(
@@ -39,6 +45,7 @@ export const useDiagramStore = create<DiagramState>()(
     edges: [],
     selectedNodeId: null,
     selectedEdgeId: null,
+    projectInfo: { ...DEFAULT_PROJECT_INFO },
 
     onNodesChange: (changes) =>
       set((state) => {
@@ -181,6 +188,11 @@ export const useDiagramStore = create<DiagramState>()(
         if (node) node.style = style as typeof node.style
       }),
 
+    updateProjectInfo: (patch) =>
+      set((state) => {
+        Object.assign(state.projectInfo, patch)
+      }),
+
     setSelectedNode: (id) =>
       set((state) => {
         state.selectedNodeId = id
@@ -197,10 +209,11 @@ export const useDiagramStore = create<DiagramState>()(
         state.edges = state.edges.map((e) => ({ ...e, selected: e.id === id }))
       }),
 
-    loadDiagram: ({ nodes, edges }) =>
+    loadDiagram: ({ nodes, edges, projectInfo }) =>
       set((state) => {
         state.nodes = nodes
         state.edges = edges
+        state.projectInfo = projectInfo ?? { ...DEFAULT_PROJECT_INFO }
         state.selectedNodeId = null
         state.selectedEdgeId = null
       }),

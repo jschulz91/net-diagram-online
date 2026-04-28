@@ -1,5 +1,6 @@
 import React from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
+import type { ProjectInfo } from '../../types/diagram'
 import { PortEditor } from './PortEditor'
 import { NODE_ICONS, NODE_COLORS, NODE_LABELS } from '../../constants/nodeDefinitions'
 
@@ -18,7 +19,7 @@ export function NodeInspector() {
   // ── Edge inspector ───────────────────────────────────
   if (selectedEdgeId) {
     const edge = edges.find((e) => e.id === selectedEdgeId)
-    if (!edge) return <EmptyHint />
+    if (!edge) return <ProjectInfoEditor />
 
     // Resolve port names for display
     const srcNode = nodes.find((n) => n.id === edge.source)
@@ -69,7 +70,7 @@ export function NodeInspector() {
 
   // ── Node inspector ───────────────────────────────────
   const node = nodes.find((n) => n.id === selectedNodeId)
-  if (!node) return <EmptyHint />
+  if (!node) return <ProjectInfoEditor />
 
   const { data } = node
   const color = NODE_COLORS[data.nodeType]
@@ -189,10 +190,50 @@ export function NodeInspector() {
   )
 }
 
-function EmptyHint() {
+function ProjectInfoEditor() {
+  const info = useDiagramStore((s) => s.projectInfo)
+  const update = useDiagramStore((s) => s.updateProjectInfo)
+
+  const fields: { key: keyof ProjectInfo; label: string }[] = [
+    { key: 'name',    label: 'Projektname' },
+    { key: 'creator', label: 'Ersteller'   },
+    { key: 'date',    label: 'Datum'       },
+    { key: 'version', label: 'Version'     },
+  ]
+
   return (
-    <div className="inspector inspector-empty">
-      <p>Knoten oder Verbindung auswählen</p>
+    <div className="inspector">
+      <div className="inspector-header" style={{ borderLeftColor: '#64748b' }}>
+        <span className="inspector-icon">📋</span>
+        <span className="inspector-type">Projektinfo</span>
+      </div>
+
+      {fields.map(({ key, label }) => (
+        <div className="inspector-field" key={key}>
+          <label className="field-label">{label}</label>
+          <input
+            className="field-input nodrag"
+            value={info[key]}
+            placeholder={label}
+            onChange={(e) => update({ [key]: e.target.value })}
+          />
+        </div>
+      ))}
+
+      <div className="inspector-field">
+        <label className="field-label">Beschreibung</label>
+        <textarea
+          className="field-textarea nodrag"
+          rows={3}
+          value={info.description}
+          placeholder="Beschreibung…"
+          onChange={(e) => update({ description: e.target.value })}
+        />
+      </div>
+
+      <p className="inspector-hint">
+        Klicke auf ein Element oder eine Verbindung um es zu bearbeiten.
+      </p>
     </div>
   )
 }

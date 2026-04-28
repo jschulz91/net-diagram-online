@@ -6,12 +6,14 @@ import type {
   ConnectionData,
   DiagramFile,
   NodeType,
+  ProjectInfo,
 } from '../types/diagram'
 
-export function toJSON(nodes: NetworkNode[], edges: NetworkEdge[]): DiagramFile {
+export function toJSON(nodes: NetworkNode[], edges: NetworkEdge[], projectInfo?: ProjectInfo): DiagramFile {
   return {
     version: '1.0',
     exportedAt: new Date().toISOString(),
+    projectInfo,
     nodes: nodes.map((n) => ({
       id: n.id,
       nodeType: n.data.nodeType,
@@ -38,7 +40,7 @@ export function toJSON(nodes: NetworkNode[], edges: NetworkEdge[]): DiagramFile 
 
 const VALID_NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc', 'zone', 'custom']
 
-export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEdge[] } {
+export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEdge[]; projectInfo?: ProjectInfo } {
   if (!raw || typeof raw !== 'object') throw new Error('Ungültiges JSON-Format')
   const file = raw as Record<string, unknown>
 
@@ -120,5 +122,17 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
     return edge as NetworkEdge
   })
 
-  return { nodes, edges }
+  let projectInfo: ProjectInfo | undefined
+  if (file.projectInfo && typeof file.projectInfo === 'object') {
+    const p = file.projectInfo as Record<string, unknown>
+    projectInfo = {
+      name: typeof p.name === 'string' ? p.name : '',
+      creator: typeof p.creator === 'string' ? p.creator : '',
+      date: typeof p.date === 'string' ? p.date : '',
+      version: typeof p.version === 'string' ? p.version : '',
+      description: typeof p.description === 'string' ? p.description : '',
+    }
+  }
+
+  return { nodes, edges, projectInfo }
 }
