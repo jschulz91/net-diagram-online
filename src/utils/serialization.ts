@@ -1,4 +1,5 @@
 import type { Edge } from 'reactflow'
+import LZString from 'lz-string'
 import type {
   NetworkNode,
   NetworkEdge,
@@ -135,4 +136,27 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
   }
 
   return { nodes, edges, projectInfo }
+}
+
+// ── Shareable URL helpers ────────────────────────────────
+
+const HASH_PREFIX = 'd='
+
+export function encodeToUrl(diagram: DiagramFile): string {
+  const json = JSON.stringify(diagram)
+  const compressed = LZString.compressToEncodedURIComponent(json)
+  const base = window.location.href.split('#')[0]
+  return `${base}#${HASH_PREFIX}${compressed}`
+}
+
+export function decodeFromHash(hash: string): ReturnType<typeof fromJSON> | null {
+  if (!hash.startsWith('#' + HASH_PREFIX)) return null
+  const compressed = hash.slice(1 + HASH_PREFIX.length)
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(compressed)
+    if (!json) return null
+    return fromJSON(JSON.parse(json))
+  } catch {
+    return null
+  }
 }

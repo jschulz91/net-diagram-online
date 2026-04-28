@@ -1,8 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
 import { NODE_ICONS, NODE_COLORS } from '../../constants/nodeDefinitions'
 import type { NodeType } from '../../types/diagram'
-import { toJSON, fromJSON } from '../../utils/serialization'
+import { toJSON, fromJSON, encodeToUrl } from '../../utils/serialization'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
@@ -24,6 +24,17 @@ export function Toolbar() {
   const projectInfo = useDiagramStore((s) => s.projectInfo)
   const loadDiagram = useDiagramStore((s) => s.loadDiagram)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  function handleShare() {
+    const diagram = toJSON(nodes, edges, projectInfo)
+    const url = encodeToUrl(diagram)
+    window.history.replaceState(null, '', url)
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    })
+  }
 
   async function handleExportPdf() {
     const canvas = document.querySelector('.react-flow') as HTMLElement | null
@@ -115,6 +126,9 @@ export function Toolbar() {
       <div className="toolbar-divider" />
 
       <div className="toolbar-section">
+        <button className="action-btn share-btn" onClick={handleShare}>
+          {shareCopied ? '✓ Link kopiert' : '⬡ Link teilen'}
+        </button>
         <button className="action-btn export-btn" onClick={handleExport}>
           ↓ JSON Export
         </button>

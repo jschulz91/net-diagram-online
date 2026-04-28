@@ -130,6 +130,8 @@ html, body, #root {
 .import-btn:hover { background: #bbf7d0; }
 .pdf-btn { background: #fef3c7; color: #92400e; }
 .pdf-btn:hover { background: #fde68a; }
+.share-btn { background: #ede9fe; color: #5b21b6; }
+.share-btn:hover { background: #ddd6fe; }
 
 .toolbar-hint {
   font-size: 10px;
