@@ -27,6 +27,7 @@ export const DEFAULT_PORTS: Record<NodeType, PortTemplate[]> = {
     { type: 'eth', name: 'X2' },
   ],
   zone: [],
+  rack: [],
   custom: [],
 }
 
@@ -37,6 +38,7 @@ export const NODE_LABELS: Record<NodeType, string> = {
   firewall: 'Firewall',
   plc: 'SPS',
   zone: 'Zone',
+  rack: 'Server Rack',
   custom: 'Benutzerdefiniert',
 }
 
@@ -47,7 +49,18 @@ export const NODE_ICONS: Record<NodeType, string> = {
   firewall: '🛡',
   plc: '⚙',
   zone: '▭',
+  rack: '▤',
   custom: '◆',
+}
+
+// Default column span (out of 5) when adding a node to a rack
+export const DEFAULT_RACK_COLSPAN: Partial<Record<NodeType, number>> = {
+  server:     5,
+  switch:     2,
+  vpn_router: 2,
+  firewall:   3,
+  plc:        1,
+  custom:     2,
 }
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -57,5 +70,6 @@ export const NODE_COLORS: Record<NodeType, string> = {
   firewall: '#ef4444',
   plc: '#f59e0b',
   zone: '#64748b',
+  rack: '#1e293b',
   custom: '#6366f1',
 }

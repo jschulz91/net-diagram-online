@@ -21,6 +21,7 @@ import { VpnRouterNode } from '../nodes/VpnRouterNode'
 import { FirewallNode } from '../nodes/FirewallNode'
 import { PlcNode } from '../nodes/PlcNode'
 import { ZoneNode } from '../nodes/ZoneNode'
+import { RackNode } from '../nodes/RackNode'
 import { CustomNode } from '../nodes/CustomNode'
 import AdjustableStepEdge from '../edges/AdjustableStepEdge'
 import { TitleBlock } from './TitleBlock'
@@ -32,6 +33,7 @@ const nodeTypes = {
   firewall: FirewallNode,
   plc: PlcNode,
   zone: ZoneNode,
+  rack: RackNode,
   custom: CustomNode,
 }
 
@@ -60,6 +62,8 @@ export function DiagramCanvas() {
 
   const frozenNodeTypes = useMemo(() => nodeTypes, [])
   const frozenEdgeTypes = useMemo(() => edgeTypes, [])
+
+  // hideCables only affects the rack-internal SVG view, not the topology edges
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -128,6 +132,7 @@ export function DiagramCanvas() {
               vpn_router: '#8b5cf6',
               firewall: '#ef4444',
               plc: '#f59e0b',
+              rack: '#1e293b',
             }
             return colors[n.type ?? ''] ?? '#94a3b8'
           }}

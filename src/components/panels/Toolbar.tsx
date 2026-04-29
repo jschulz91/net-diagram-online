@@ -14,6 +14,7 @@ const NODE_NAMES: Record<NodeType, string> = {
   firewall: 'Firewall',
   plc: 'SPS',
   zone: 'Zone',
+  rack: 'Server Rack',
   custom: 'Benutzerdefiniert',
 }
 
@@ -120,6 +121,14 @@ export function Toolbar() {
         >
           <span className="btn-icon">▭</span>
           <span>Zone</span>
+        </button>
+        <button
+          className="add-node-btn"
+          style={{ borderLeftColor: '#1e293b' }}
+          onClick={() => addNode('rack')}
+        >
+          <span className="btn-icon">▤</span>
+          <span>Server Rack</span>
         </button>
       </div>
 

@@ -60,7 +60,7 @@ function AdjustableStepEdge({
         path={edgePath}
         markerEnd={markerEnd}
         markerStart={markerStart}
-        style={style}
+        style={data?.dashed ? { ...style, strokeDasharray: '7 4' } : style}
         label={label}
         labelX={labelX}
         labelY={labelY}

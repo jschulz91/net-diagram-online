@@ -8,7 +8,7 @@ export interface ProjectInfo {
   description: string
 }
 
-export type NodeType = 'server' | 'switch' | 'vpn_router' | 'firewall' | 'plc' | 'zone' | 'custom'
+export type NodeType = 'server' | 'switch' | 'vpn_router' | 'firewall' | 'plc' | 'zone' | 'rack' | 'custom'
 
 export interface Port {
   id: string
@@ -16,20 +16,32 @@ export interface Port {
   name: string  // e.g. "X1", "eth0", "GE1"
 }
 
+export interface RackSlot {
+  nodeId: string    // references a node in the diagram
+  uRow: number      // 1-based U position
+  colStart: number  // 1–5, starting column
+  colSpan: number   // 1–5, number of columns spanned
+}
+
 export interface NetworkNodeData {
   label: string
   nodeType: NodeType
   ports: Port[]
   description?: string
-  portSide?: 'left' | 'right'   // which side handles appear on (default: right)
-  customColor?: string           // only used by 'custom' node type
+  portSide?: 'left' | 'right'
+  customColor?: string
+  rackUnits?: number      // only for 'rack' — number of U rows (default 12)
+  hideCables?: boolean    // only for 'rack' — hide edges between racked nodes
+  rackSlots?: RackSlot[]  // only for 'rack' — devices mounted in this rack
 }
 
 export interface ConnectionData {
   sourcePortId: string
   targetPortId: string
   label?: string
-  routingOffset?: number  // horizontal offset for the vertical segment of step edges
+  routingOffset?: number
+  color?: string    // optional stroke color
+  dashed?: boolean  // dashed line style
 }
 
 export type NetworkNode = Node<NetworkNodeData>
@@ -43,6 +55,13 @@ export interface SerializedPort {
   name: string
 }
 
+export interface SerializedRackSlot {
+  nodeId: string
+  uRow: number
+  colStart: number
+  colSpan: number
+}
+
 export interface SerializedNode {
   id: string
   nodeType: NodeType
@@ -50,6 +69,13 @@ export interface SerializedNode {
   description?: string
   ports: SerializedPort[]
   position: { x: number; y: number }
+  style?: Record<string, unknown>
+  zIndex?: number
+  portSide?: 'left' | 'right'
+  customColor?: string
+  rackUnits?: number
+  hideCables?: boolean
+  rackSlots?: SerializedRackSlot[]
 }
 
 export interface SerializedEdge {
@@ -59,6 +85,9 @@ export interface SerializedEdge {
   targetNodeId: string
   targetPortId: string
   label?: string
+  routingOffset?: number
+  color?: string
+  dashed?: boolean
 }
 
 export interface DiagramFile {

@@ -22,9 +22,12 @@ export function toJSON(nodes: NetworkNode[], edges: NetworkEdge[], projectInfo?:
       description: n.data.description,
       portSide: n.data.portSide,
       customColor: n.data.customColor,
+      rackUnits: n.data.rackUnits,
+      hideCables: n.data.hideCables,
+      rackSlots: n.data.rackSlots,
       ports: n.data.ports.map((p) => ({ id: p.id, type: p.type, name: p.name })),
       position: { x: n.position.x, y: n.position.y },
-      style: n.style,
+      style: n.style as Record<string, unknown> | undefined,
       zIndex: n.zIndex,
     })),
     edges: edges.map((e) => ({
@@ -35,11 +38,13 @@ export function toJSON(nodes: NetworkNode[], edges: NetworkEdge[], projectInfo?:
       targetPortId: e.data?.targetPortId ?? e.targetHandle ?? '',
       label: typeof e.label === 'string' ? e.label : (e.data?.label ?? undefined),
       routingOffset: e.data?.routingOffset,
+      color: e.data?.color,
+      dashed: e.data?.dashed,
     })),
   }
 }
 
-const VALID_NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc', 'zone', 'custom']
+const VALID_NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc', 'zone', 'rack', 'custom']
 
 export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEdge[]; projectInfo?: ProjectInfo } {
   if (!raw || typeof raw !== 'object') throw new Error('Ungültiges JSON-Format')
@@ -49,7 +54,7 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
   if (!Array.isArray(file.nodes)) throw new Error('"nodes" muss ein Array sein')
   if (!Array.isArray(file.edges)) throw new Error('"edges" muss ein Array sein')
 
-  const nodes: NetworkNode[] = file.nodes.map((raw: unknown, i: number) => {
+  const unsortedNodes: NetworkNode[] = file.nodes.map((raw: unknown, i: number) => {
     if (!raw || typeof raw !== 'object') throw new Error(`Knoten ${i}: ungültiges Format`)
     const n = raw as Record<string, unknown>
     if (typeof n.id !== 'string') throw new Error(`Knoten ${i}: fehlende id`)
@@ -61,12 +66,28 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
     if (typeof pos?.x !== 'number' || typeof pos?.y !== 'number')
       throw new Error(`Knoten ${i}: ungültige position`)
 
+    const nodeType = n.nodeType as NodeType
+    const isContainer = nodeType === 'zone' || nodeType === 'rack'
+
     const data: NetworkNodeData = {
       label: n.label as string,
-      nodeType: n.nodeType as NodeType,
+      nodeType,
       description: typeof n.description === 'string' ? n.description : undefined,
-      portSide: n.portSide === 'left' ? 'left' : 'right',
+      portSide: isContainer ? undefined : (n.portSide === 'left' ? 'left' : 'right'),
       customColor: typeof n.customColor === 'string' ? n.customColor : undefined,
+      rackUnits: typeof n.rackUnits === 'number' ? n.rackUnits : (nodeType === 'rack' ? 12 : undefined),
+      hideCables: n.hideCables === true ? true : undefined,
+      rackSlots: Array.isArray(n.rackSlots)
+        ? (n.rackSlots as unknown[]).map((s: unknown) => {
+            const slot = s as Record<string, unknown>
+            return {
+              nodeId: String(slot.nodeId ?? ''),
+              uRow: Number(slot.uRow ?? 1),
+              colStart: Number(slot.colStart ?? 1),
+              colSpan: Number(slot.colSpan ?? 1),
+            }
+          })
+        : (nodeType === 'rack' ? [] : undefined),
       ports: (n.ports as unknown[]).map((p: unknown, pi: number) => {
         if (!p || typeof p !== 'object') throw new Error(`Knoten ${i}, Port ${pi}: ungültig`)
         const port = p as Record<string, unknown>
@@ -76,16 +97,27 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
       }),
     }
 
-    const isZone = (n.nodeType as string) === 'zone'
+    const defaultStyle = nodeType === 'rack'
+      ? { width: 180, height: 420 }
+      : nodeType === 'zone'
+      ? { width: 280, height: 200 }
+      : undefined
+
     return {
       id: n.id as string,
-      type: n.nodeType as string,
+      type: nodeType as string,
       position: { x: pos.x as number, y: pos.y as number },
-      zIndex: typeof n.zIndex === 'number' ? n.zIndex : (isZone ? -1 : 0),
-      style: n.style as Record<string, unknown> | undefined ?? (isZone ? { width: 280, height: 200 } : undefined),
+      zIndex: typeof n.zIndex === 'number' ? n.zIndex : (isContainer ? -1 : 0),
+      style: (n.style as Record<string, unknown> | undefined) ?? defaultStyle,
       data,
     }
   })
+
+  // No parentNode relationships — order doesn't matter, but zones/racks first looks cleaner
+  const nodes = [
+    ...unsortedNodes.filter((n) => n.data.nodeType === 'rack' || n.data.nodeType === 'zone'),
+    ...unsortedNodes.filter((n) => n.data.nodeType !== 'rack' && n.data.nodeType !== 'zone'),
+  ]
 
   const edges: NetworkEdge[] = file.edges.map((raw: unknown, i: number) => {
     if (!raw || typeof raw !== 'object') throw new Error(`Kante ${i}: ungültiges Format`)
@@ -100,6 +132,9 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
       throw new Error(`Kante ${i}: fehlende Felder`)
 
     const edgeLabel = typeof e.label === 'string' && e.label ? e.label : undefined
+    const edgeColor = typeof e.color === 'string' && e.color ? e.color : undefined
+    const strokeColor = edgeColor ?? '#64748b'
+
     const edge: Edge<ConnectionData> = {
       id: e.id as string,
       source: e.sourceNodeId as string,
@@ -108,7 +143,7 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
       targetHandle: e.targetPortId as string,
       type: 'adjustable-step',
       label: edgeLabel,
-      style: { strokeWidth: 2, stroke: '#64748b' },
+      style: { strokeWidth: 2, stroke: strokeColor },
       labelStyle: { fontSize: 11, fontWeight: 600, fill: '#334155' },
       labelBgStyle: { fill: '#f8fafc', stroke: '#e2e8f0' },
       labelBgPadding: [4, 6] as [number, number],
@@ -118,6 +153,8 @@ export function fromJSON(raw: unknown): { nodes: NetworkNode[]; edges: NetworkEd
         targetPortId: e.targetPortId as string,
         label: edgeLabel,
         routingOffset: typeof e.routingOffset === 'number' ? e.routingOffset : undefined,
+        color: edgeColor,
+        dashed: e.dashed === true ? true : undefined,
       },
     }
     return edge as NetworkEdge
