@@ -10,28 +10,43 @@ import {
 import type { ConnectionData } from '../../types/diagram'
 import { useDiagramStore } from '../../store/diagramStore'
 
-// How far the elbow extends beyond the port in the "facing away" case
-const ELBOW_BASE = 40
+const ELBOW = 40  // px stub before the first turn
 
-function buildFacingAwayPath(
+function buildManualPath(
   sourceX: number, sourceY: number, sourcePosition: Position,
-  targetX: number, targetY: number,
+  targetX: number, targetY: number, targetPosition: Position,
   offsetX: number, offsetY: number
 ): { d: string; lx: number; ly: number } {
-  // 5-segment symmetric orthogonal path:
-  //   source → left/right elbow → mid-Y → opposite elbow → target
+
+  // ── Same-direction (LL or RR): 3-segment L-path ─────────
+  if (sourcePosition === targetPosition) {
+    let elbowX: number
+    if (sourcePosition === Position.Left) {
+      // Both exit left → elbow to the LEFT of both nodes
+      elbowX = Math.min(sourceX, targetX) - ELBOW + offsetX
+    } else {
+      // Both exit right → elbow to the RIGHT of both nodes
+      elbowX = Math.max(sourceX, targetX) + ELBOW + offsetX
+    }
+    const d = `M ${sourceX},${sourceY} H ${elbowX} V ${targetY} H ${targetX}`
+    // Handle sits on the vertical segment, centered between the two Y values
+    return { d, lx: elbowX, ly: (sourceY + targetY) / 2 + offsetY }
+  }
+
+  // ── Facing-away (LR or RL): 5-segment U-path ────────────
+  // Source exits away from target, requiring a loop around both nodes
   const midY = (sourceY + targetY) / 2 + offsetY
   let elbowSrc: number
   let elbowTgt: number
 
   if (sourcePosition === Position.Left) {
-    // Source exits LEFT → elbow to the left; target enters from RIGHT → elbow to the right
-    elbowSrc = sourceX - ELBOW_BASE + offsetX
-    elbowTgt = targetX + ELBOW_BASE - offsetX
+    // Source exits LEFT, target enters from RIGHT
+    elbowSrc = sourceX - ELBOW + offsetX
+    elbowTgt = targetX + ELBOW - offsetX
   } else {
-    // Source exits RIGHT → elbow to the right; target enters from LEFT → elbow to the left
-    elbowSrc = sourceX + ELBOW_BASE + offsetX
-    elbowTgt = targetX - ELBOW_BASE - offsetX
+    // Source exits RIGHT, target enters from LEFT
+    elbowSrc = sourceX + ELBOW + offsetX
+    elbowTgt = targetX - ELBOW - offsetX
   }
 
   const d = [
@@ -44,10 +59,7 @@ function buildFacingAwayPath(
   ].join(' ')
 
   // Handle at the center of the horizontal middle segment
-  const lx = (elbowSrc + elbowTgt) / 2
-  const ly = midY
-
-  return { d, lx, ly }
+  return { d, lx: (elbowSrc + elbowTgt) / 2, ly: midY }
 }
 
 function AdjustableStepEdge({
@@ -64,19 +76,23 @@ function AdjustableStepEdge({
   const routingOffsetX = data?.routingOffset ?? 0
   const routingOffsetY = data?.routingOffsetY ?? 0
 
-  // Detect facing-away configurations where getSmoothStepPath's centerX breaks
-  const isFacingAway =
-    (sourcePosition === Position.Left && targetPosition === Position.Right) ||
-    (sourcePosition === Position.Right && targetPosition === Position.Left)
+  // getSmoothStepPath works well only for the standard Right→Left case.
+  // For same-direction (LL, RR) and facing-away (LR, RL), use manual paths.
+  const sp = sourcePosition ?? Position.Right
+  const tp = targetPosition ?? Position.Left
+  const needsManualPath =
+    sp === tp ||  // Left→Left or Right→Right
+    (sp === Position.Left && tp === Position.Right) ||   // facing away
+    (sp === Position.Right && tp === Position.Left && false)  // Right→Left is normal, keep getSmoothStepPath
 
   let edgePath: string
   let labelX: number
   let labelY: number
 
-  if (isFacingAway) {
-    const { d, lx, ly } = buildFacingAwayPath(
-      sourceX, sourceY, sourcePosition,
-      targetX, targetY,
+  if (needsManualPath) {
+    const { d, lx, ly } = buildManualPath(
+      sourceX, sourceY, sp,
+      targetX, targetY, tp,
       routingOffsetX, routingOffsetY
     )
     edgePath = d
@@ -86,8 +102,8 @@ function AdjustableStepEdge({
     const centerX = (sourceX + targetX) / 2 + routingOffsetX
     const centerY = (sourceY + targetY) / 2 + routingOffsetY
     ;[edgePath, labelX, labelY] = getSmoothStepPath({
-      sourceX, sourceY, sourcePosition,
-      targetX, targetY, targetPosition,
+      sourceX, sourceY, sourcePosition: sp,
+      targetX, targetY, targetPosition: tp,
       borderRadius: 0,
       centerX,
       centerY,
