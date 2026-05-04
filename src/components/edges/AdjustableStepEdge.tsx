@@ -4,10 +4,51 @@ import {
   EdgeLabelRenderer,
   getSmoothStepPath,
   useReactFlow,
+  Position,
   type EdgeProps,
 } from 'reactflow'
 import type { ConnectionData } from '../../types/diagram'
 import { useDiagramStore } from '../../store/diagramStore'
+
+// How far the elbow extends beyond the port in the "facing away" case
+const ELBOW_BASE = 40
+
+function buildFacingAwayPath(
+  sourceX: number, sourceY: number, sourcePosition: Position,
+  targetX: number, targetY: number,
+  offsetX: number, offsetY: number
+): { d: string; lx: number; ly: number } {
+  // 5-segment symmetric orthogonal path:
+  //   source → left/right elbow → mid-Y → opposite elbow → target
+  const midY = (sourceY + targetY) / 2 + offsetY
+  let elbowSrc: number
+  let elbowTgt: number
+
+  if (sourcePosition === Position.Left) {
+    // Source exits LEFT → elbow to the left; target enters from RIGHT → elbow to the right
+    elbowSrc = sourceX - ELBOW_BASE + offsetX
+    elbowTgt = targetX + ELBOW_BASE - offsetX
+  } else {
+    // Source exits RIGHT → elbow to the right; target enters from LEFT → elbow to the left
+    elbowSrc = sourceX + ELBOW_BASE + offsetX
+    elbowTgt = targetX - ELBOW_BASE - offsetX
+  }
+
+  const d = [
+    `M ${sourceX},${sourceY}`,
+    `H ${elbowSrc}`,
+    `V ${midY}`,
+    `H ${elbowTgt}`,
+    `V ${targetY}`,
+    `H ${targetX}`,
+  ].join(' ')
+
+  // Handle at the center of the horizontal middle segment
+  const lx = (elbowSrc + elbowTgt) / 2
+  const ly = midY
+
+  return { d, lx, ly }
+}
 
 function AdjustableStepEdge({
   id,
@@ -23,18 +64,35 @@ function AdjustableStepEdge({
   const routingOffsetX = data?.routingOffset ?? 0
   const routingOffsetY = data?.routingOffsetY ?? 0
 
-  const centerX = (sourceX + targetX) / 2 + routingOffsetX
-  const centerY = (sourceY + targetY) / 2 + routingOffsetY
+  // Detect facing-away configurations where getSmoothStepPath's centerX breaks
+  const isFacingAway =
+    (sourcePosition === Position.Left && targetPosition === Position.Right) ||
+    (sourcePosition === Position.Right && targetPosition === Position.Left)
 
-  // labelX/labelY is the actual geometric center of the rendered path —
-  // always correct regardless of sourcePosition/targetPosition direction
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX, sourceY, sourcePosition,
-    targetX, targetY, targetPosition,
-    borderRadius: 0,
-    centerX,
-    centerY,
-  })
+  let edgePath: string
+  let labelX: number
+  let labelY: number
+
+  if (isFacingAway) {
+    const { d, lx, ly } = buildFacingAwayPath(
+      sourceX, sourceY, sourcePosition,
+      targetX, targetY,
+      routingOffsetX, routingOffsetY
+    )
+    edgePath = d
+    labelX = lx
+    labelY = ly
+  } else {
+    const centerX = (sourceX + targetX) / 2 + routingOffsetX
+    const centerY = (sourceY + targetY) / 2 + routingOffsetY
+    ;[edgePath, labelX, labelY] = getSmoothStepPath({
+      sourceX, sourceY, sourcePosition,
+      targetX, targetY, targetPosition,
+      borderRadius: 0,
+      centerX,
+      centerY,
+    })
+  }
 
   const dragRef = useRef<{
     startX: number; startY: number
@@ -94,14 +152,13 @@ function AdjustableStepEdge({
             className="edge-routing-handle nodrag nopan"
             style={{
               position: 'absolute',
-              // Place handle at the actual path center, works for any port direction
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
               zIndex: 1000,
               cursor: 'move',
             }}
             onMouseDown={onHandleMouseDown}
-            title="Kante verschieben (horizontal + vertikal ziehen)"
+            title="Kante verschieben"
           />
         </EdgeLabelRenderer>
       )}
