@@ -44,8 +44,8 @@ export function Toolbar() {
     try {
       const { width, height } = canvas.getBoundingClientRect()
       const dataUrl = await toJpeg(canvas, {
-        pixelRatio: 1.5,
-        quality: 0.88,
+        pixelRatio: 2,
+        quality: 0.92,
         backgroundColor: '#f1f5f9',
         filter: (node) => {
           if (node.classList?.contains('no-print')) return false
