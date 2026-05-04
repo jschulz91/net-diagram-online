@@ -39,9 +39,10 @@ export interface ConnectionData {
   sourcePortId: string
   targetPortId: string
   label?: string
-  routingOffset?: number
-  color?: string    // optional stroke color
-  dashed?: boolean  // dashed line style
+  routingOffset?: number   // horizontal shift of the vertical segment
+  routingOffsetY?: number  // vertical shift of the bend point
+  color?: string
+  dashed?: boolean
 }
 
 export type NetworkNode = Node<NetworkNodeData>

@@ -20,28 +20,47 @@ function AdjustableStepEdge({
   const updateEdgeData = useDiagramStore((s) => s.updateEdgeData)
   const { getZoom } = useReactFlow()
 
-  const routingOffset = data?.routingOffset ?? 0
-  const centerX = (sourceX + targetX) / 2 + routingOffset
+  const routingOffsetX = data?.routingOffset ?? 0
+  const routingOffsetY = data?.routingOffsetY ?? 0
 
+  const centerX = (sourceX + targetX) / 2 + routingOffsetX
+  const centerY = (sourceY + targetY) / 2 + routingOffsetY
+
+  // labelX/labelY is the actual geometric center of the rendered path —
+  // always correct regardless of sourcePosition/targetPosition direction
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
     borderRadius: 0,
     centerX,
+    centerY,
   })
 
-  const dragRef = useRef<{ startX: number; startOffset: number } | null>(null)
+  const dragRef = useRef<{
+    startX: number; startY: number
+    startOffsetX: number; startOffsetY: number
+  } | null>(null)
 
   const onHandleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
-      dragRef.current = { startX: e.clientX, startOffset: routingOffset }
+      dragRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startOffsetX: routingOffsetX,
+        startOffsetY: routingOffsetY,
+      }
 
       const onMove = (me: MouseEvent) => {
         if (!dragRef.current) return
-        const delta = (me.clientX - dragRef.current.startX) / getZoom()
-        updateEdgeData(id, { routingOffset: dragRef.current.startOffset + delta })
+        const zoom = getZoom()
+        const dx = (me.clientX - dragRef.current.startX) / zoom
+        const dy = (me.clientY - dragRef.current.startY) / zoom
+        updateEdgeData(id, {
+          routingOffset: dragRef.current.startOffsetX + dx,
+          routingOffsetY: dragRef.current.startOffsetY + dy,
+        })
       }
       const onUp = () => {
         dragRef.current = null
@@ -51,7 +70,7 @@ function AdjustableStepEdge({
       document.addEventListener('mousemove', onMove)
       document.addEventListener('mouseup', onUp)
     },
-    [id, routingOffset, updateEdgeData, getZoom]
+    [id, routingOffsetX, routingOffsetY, updateEdgeData, getZoom]
   )
 
   return (
@@ -75,12 +94,14 @@ function AdjustableStepEdge({
             className="edge-routing-handle nodrag nopan"
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${centerX}px,${(sourceY + targetY) / 2}px)`,
+              // Place handle at the actual path center, works for any port direction
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
               zIndex: 1000,
+              cursor: 'move',
             }}
             onMouseDown={onHandleMouseDown}
-            title="Kante verschieben (ziehen)"
+            title="Kante verschieben (horizontal + vertikal ziehen)"
           />
         </EdgeLabelRenderer>
       )}

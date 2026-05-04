@@ -68,6 +68,15 @@ export function DiagramCanvas() {
   const onConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target || !params.sourceHandle || !params.targetHandle) return
+
+      // Count existing edges between the same node pair to auto-offset stacked edges
+      const pairEdges = edges.filter(
+        (e) =>
+          (e.source === params.source && e.target === params.target) ||
+          (e.source === params.target && e.target === params.source)
+      )
+      const stackOffset = pairEdges.length * 32
+
       const edge: Edge<ConnectionData> = {
         id: uuid(),
         source: params.source,
@@ -83,11 +92,12 @@ export function DiagramCanvas() {
         data: {
           sourcePortId: params.sourceHandle,
           targetPortId: params.targetHandle,
+          routingOffset: stackOffset > 0 ? stackOffset : undefined,
         },
       }
       addEdge(edge)
     },
-    [addEdge]
+    [addEdge, edges]
   )
 
   const isValidConnection = useCallback(
