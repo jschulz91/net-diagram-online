@@ -3,7 +3,7 @@ import { useDiagramStore } from '../../store/diagramStore'
 import { NODE_ICONS, NODE_COLORS } from '../../constants/nodeDefinitions'
 import type { NodeType } from '../../types/diagram'
 import { toJSON, fromJSON, encodeToUrl } from '../../utils/serialization'
-import { toPng } from 'html-to-image'
+import { toJpeg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
 const NODE_TYPES: NodeType[] = ['server', 'switch', 'vpn_router', 'firewall', 'plc', 'custom']
@@ -26,6 +26,7 @@ export function Toolbar() {
   const loadDiagram = useDiagramStore((s) => s.loadDiagram)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  const [pdfHideGrid, setPdfHideGrid] = useState(false)
 
   function handleShare() {
     const diagram = toJSON(nodes, edges, projectInfo)
@@ -41,17 +42,19 @@ export function Toolbar() {
     const canvas = document.querySelector('.react-flow') as HTMLElement | null
     if (!canvas) return
     try {
-      const dataUrl = await toPng(canvas, {
-        pixelRatio: 2,
-        backgroundColor: '#f1f5f9',
-        filter: (node) => !node.classList?.contains('no-print'),
-      })
-      const img = new Image()
-      img.src = dataUrl
-      await new Promise((res) => { img.onload = res })
       const { width, height } = canvas.getBoundingClientRect()
-      const pdf = new jsPDF({ orientation: width > height ? 'l' : 'p', unit: 'px', format: [width * 2, height * 2] })
-      pdf.addImage(dataUrl, 'PNG', 0, 0, width * 2, height * 2)
+      const dataUrl = await toJpeg(canvas, {
+        pixelRatio: 1.5,
+        quality: 0.88,
+        backgroundColor: '#f1f5f9',
+        filter: (node) => {
+          if (node.classList?.contains('no-print')) return false
+          if (pdfHideGrid && node.classList?.contains('react-flow__background')) return false
+          return true
+        },
+      })
+      const pdf = new jsPDF({ orientation: width > height ? 'l' : 'p', unit: 'px', format: [width, height] })
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, width, height)
       pdf.save(`netzwerkdiagramm-${new Date().toISOString().slice(0, 10)}.pdf`)
     } catch (e) {
       alert(`PDF-Export fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`)
@@ -147,6 +150,14 @@ export function Toolbar() {
         <button className="action-btn pdf-btn" onClick={handleExportPdf}>
           ↓ PDF Export
         </button>
+        <label className="pdf-option-label">
+          <input
+            type="checkbox"
+            checked={pdfHideGrid}
+            onChange={(e) => setPdfHideGrid(e.target.checked)}
+          />
+          Raster ausblenden
+        </label>
         <input
           ref={fileInputRef}
           type="file"
