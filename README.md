@@ -38,7 +38,7 @@ No need to clone the repository or install dependencies. Open the link and start
 | **JSON Export** | Downloads a `.json` file you can import on any device. Best for backups and offline workflows. |
 | **JSON Import** | Loads a previously exported `.json` file and replaces the current diagram. |
 | **Link teilen** | Compresses the full diagram into the URL hash and copies it to your clipboard. Anyone with the link can open the exact same diagram — no server involved. |
-| **PDF Export** | Screenshots the canvas (including the title block, excluding navigation controls) and saves it as a PDF. |
+| **PDF Export** | Screenshots the canvas (including the title block, excluding navigation controls) and saves it as a PDF. A **"Raster ausblenden"** checkbox below the button lets you suppress the background grid in the export. |
 
 > **Privacy note:** The share URL contains the entire diagram payload. Do not share links publicly if your diagram contains confidential hostnames, IP addresses, or network topology.
 
